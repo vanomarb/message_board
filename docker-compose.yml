@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+    web:
+        image: php:8.1-apache
+        container_name: php-app
+        volumes:
+            - ./workspace:/var/www/html
+        ports:
+            - "8080:80"
+
+    db:
+        image: mysql:8.0
+        container_name: mysql-db
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: cde3bgt5_root
+            MYSQL_USER: ncwww
+            MYSQL_PASSWORD: cde3bgt5
+            MYSQL_DATABASE: employees
