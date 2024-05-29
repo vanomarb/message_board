@@ -6,8 +6,6 @@ require_once "config/init.php";
 
 // $car2 = new Car("v8", 4, false, 100, 2);
 
-
-
 // // convoy
 // $moalboal_distaince = 85;
 // $total_people = 20;
@@ -23,17 +21,15 @@ require_once "config/init.php";
 // $car1->calculate_travel_cycles($total_people);
 // echo "<hr/>";
 // $car2->calculate_travel_cycles($total_people);
+// $wigo = new Toyota("v3", 4, false, 60, 5, 100);
+// $xpander = new Nissan();
+// $coolray = new Geely();
 
+// echo "<pre>";
+// $wigo->calculateMaintenceCost();
+// // $wigo->doAction();
 
-$wigo = new Toyota("v3", 4, false, 60, 5, 100);
-$xpander = new Nissan();
-$coolray = new Geely();
-
-echo "<pre>";
-$wigo->calculateMaintenceCost();
-// $wigo->doAction();
-
-die();
+// die();
 
 
 // load header
@@ -77,11 +73,33 @@ if (array_key_exists('page', $_GET)) {
 			}
 			break;
 		default:
-			include "pages/landing_page.php";
+			if (!isset($_SESSION['is_logged_in'])) {
+				// redirect to login
+				echo "<script>
+					window.location.href = '?page=login&debug_came_from_logout=1';
+				</script>";
+				
+			} else {
+				// redirect to login
+				echo "<script>
+					window.location.href = '?page=home&debug_came_from_logout=1';
+				</script>";
+			}
 			break;
 	}
 } else {
-	include "pages/landing_page.php";
+	if (!isset($_SESSION['is_logged_in'])) {
+		// redirect to login
+		echo "<script>
+			window.location.href = '?page=login&debug_came_from_logout=1';
+		</script>";
+		
+	} else {
+		// redirect to login
+		echo "<script>
+			window.location.href = '?page=home&debug_came_from_logout=1';
+		</script>";
+	}
 }
 
 // load footer
