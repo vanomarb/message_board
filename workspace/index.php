@@ -2,6 +2,40 @@
 // initialize any config files
 require_once "config/init.php";
 
+// $car1 = new Car("v6", 4, false, 20, 5);
+
+// $car2 = new Car("v8", 4, false, 100, 2);
+
+
+
+// // convoy
+// $moalboal_distaince = 85;
+// $total_people = 20;
+
+// echo $car1->variable1;
+
+// $car1->travel("moalboal", 85);
+// echo "<hr/>";
+
+// $car2->travel("moalboal", 85);
+// echo "<hr/>";
+
+// $car1->calculate_travel_cycles($total_people);
+// echo "<hr/>";
+// $car2->calculate_travel_cycles($total_people);
+
+
+$wigo = new Toyota("v3", 4, false, 60, 5, 100);
+$xpander = new Nissan();
+$coolray = new Geely();
+
+echo "<pre>";
+$wigo->calculateMaintenceCost();
+// $wigo->doAction();
+
+die();
+
+
 // load header
 include "view_partials/header.php";
 

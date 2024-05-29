@@ -1,3 +1,5 @@
 <?php
 session_start();
-// load anything important here related to your program!!!!!!
+
+// load the class
+require "config/classes/Car.php";
