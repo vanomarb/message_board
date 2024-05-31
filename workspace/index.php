@@ -53,7 +53,11 @@ if (array_key_exists('page', $_GET)) {
 				include "pages/login.php";
 			}
 			break;
-
+		
+		case 'edit':
+			include "pages/edit.php";
+			break;
+			
 		case 'logout':
 			// delete session
 			session_destroy();

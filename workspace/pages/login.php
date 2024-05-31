@@ -3,13 +3,13 @@ if (
     array_key_exists('username', $_POST)
 ) {
     if (isset($_POST["username"])) {
-
+        
         $result = $db->sql->query("
             select * from users 
             where 
                 id = {$_POST['username']}
         ");
-
+        
         // - if has data, get user info and login!
         if ($result->num_rows > 0) {
             $user = $result->fetch_all(MYSQLI_ASSOC);
