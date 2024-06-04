@@ -77,4 +77,17 @@ class PagesController extends AppController {
 			throw new NotFoundException();
 		}
 	}
+
+	public function sample(){
+		echo "hello world!";
+		die();
+	}
+
+	public function home () {
+		echo "home";
+		die();
+	}
+
+	public function lazada () {
+	}
 }

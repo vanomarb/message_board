@@ -31,4 +31,12 @@ App::uses('Controller', 'Controller');
  * @link		https://book.cakephp.org/2.0/en/controllers.html#the-app-controller
  */
 class AppController extends Controller {
+    // this will tell cakek to support php files for the view for rendering
+    public $ext = '.php';
+
+    public function beforeFilter(){
+        parent::beforeFilter();
+
+        $this->set("GLOBAL_VARIABLE_NI_SIYA", 111);
+    }
 }
