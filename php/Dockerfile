@@ -2,7 +2,7 @@
 FROM php:8.1-apache
 
 # install mysql extension for php
-RUN docker-php-ext-install mysqli
+RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable pdo_mysql
 
 # add file
 ADD ./php/apache2.conf /etc/apache2/apache2.conf
