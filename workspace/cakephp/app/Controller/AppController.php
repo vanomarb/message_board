@@ -33,17 +33,13 @@ App::uses('Controller', 'Controller');
 class AppController extends Controller {
     // this will tell cakek to support php files for the view for rendering
     public $ext = '.php';
-    public $uses = [
-        'Contact'
-    ];
+
+    // include the Post Model
+    public $uses = array(
+        'Post'
+    );
 
     public function beforeFilter(){
         parent::beforeFilter();
-
-        $contacts = $this->Contact->find('all');
-        var_dump($contacts);
-        die();
-
-        $this->set("GLOBAL_VARIABLE_NI_SIYA", 111);
     }
 }
