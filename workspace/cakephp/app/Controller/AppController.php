@@ -39,7 +39,37 @@ class AppController extends Controller {
         'Post'
     );
 
+    // - include components
+    public $components = array(
+        'Flash',
+        'Auth' => array(
+            // if the user is logged in
+            'loginRedirect' => array(
+                'controller' => 'users',
+                'action' => 'index'
+            ),
+
+            // if teh user is not logged in AND accesses a forbidden action,
+            'logoutRedirect' => array(
+                'controller' => 'pages',
+                'action' => 'display',
+                'home'
+            ),
+            'authenticate' => array(
+                'Form' => array(
+                    // 'passwordHasher' => 'Blowfish',
+                    // if you want to customize the fields for logging in
+                    // 'fields'=>array('username'=>'email','password'=>'password')
+                )
+            )
+        )
+    );
+    
     public function beforeFilter(){
         parent::beforeFilter();
+        
+        // global restriction
+        // $this->Auth->allow('index', 'view', 'add');
+        $this->set('currentUser', $this->Auth->user());
     }
 }
