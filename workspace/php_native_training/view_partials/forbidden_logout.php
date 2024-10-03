@@ -1,1 +1,0 @@
-what are you doing here, you are already inside the system go back to <a href="?page=home">home</a>
