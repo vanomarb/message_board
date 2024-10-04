@@ -100,7 +100,7 @@
     $(document).ready(function() {
         let $chatContainer = $('.conversation_scroller');
         let offset = 0; // Initial offset
-        let limit = 4; // Number of messages to load per request
+        let limit = 10; // Number of messages to load per request
 
         // convert autogrow textarea javascript above to jquery 
         $(document).on('input', '#autoGrowTextarea', function() {
@@ -126,7 +126,6 @@
                         var res = JSON.parse(response);
                         if (res.status === "success") {
                             loadConversations(offset, limit).then(function(data) {
-                                console.log(data.conversations.data.length);
                                 if (data.conversations.data.length == 0) {
                                     window.location.href = base_url + 'messages'
                                 }
@@ -157,7 +156,14 @@
                     success: function(response) {
                         var res = JSON.parse(response);
                         if (res.status == "success") {
-                            loadConversations(offset, limit);
+                            $('.conversation_box').empty(); // reset conversation
+                            offset = offset - limit; // this is to enable scrolling again
+                            // set offset to 0 to get the latest message
+                            loadConversations(0, limit).then(function() {
+                                // Scroll to bottom after initial load
+                                $chatContainer.scrollTop($chatContainer[0].scrollHeight);
+                            })
+
                             $('#autoGrowTextarea').val(''); // Reset textarea
                             $('#autoGrowTextarea').css('height', '40px'); // Reset textarea height
                         } else {
@@ -175,6 +181,12 @@
 
         // Load initial messages and scroll to bottom
         loadConversations(offset, limit).then(function(data) {
+
+            if (data.conversations.data.length === 0) {
+                handleNoMessages(offset, resolve);
+                return;
+            }
+
             // Scroll to bottom after initial load
             $chatContainer.scrollTop($chatContainer[0].scrollHeight);
             offset = data.offset; // Update the offset based on the new offset returned
@@ -203,6 +215,19 @@
             });
         }
 
+        function handleNoMessages(offset, resolve) {
+            const messageContainer = $('.messageListContainer');
+
+            if (messageContainer.find('.emptyMessage').length === 0) {
+                messageContainer.append(`
+      <li class="emptyMessage flex justify-center py-5 text-center items-center">
+        No more messages to load.
+      </li>
+    `);
+            }
+
+            resolve(offset); // Resolve with current offset
+        }
         // Function to load conversations via AJAX
         function loadConversations(offset, limit) {
             const conversation_id = $('.conversation_container').data('cid');
