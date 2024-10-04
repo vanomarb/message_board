@@ -104,9 +104,12 @@ class MessagesController extends AppController
     public function new_message()
     {
         if ($this->request->is('post')) {
-            // Debug the incoming request data
             // Bind data to the model
             $this->Message->set($this->request->data);
+
+            // Escape the content before saving it to the database to avoid potential XSS vulnerabilities
+            $this->request->data['Message']['content'] = htmlspecialchars($this->request->data['Message']['content'], ENT_QUOTES, 'UTF-8');
+            
 
             // Validation Check
             if ($this->Message->validates()) {

@@ -47,8 +47,11 @@ class Message extends AppModel
                 'message' => 'Content cannot be blank.',
                 'allowEmpty' => false,
                 'required' => true
-
             ),
+            // 'plainText' => array(
+            //     'rule' => 'validatePlainText',
+            //     'message' => 'Content must be plain text and cannot contain HTML or script tags.',
+            // ),
         ),
         'created_ip' => array(
             'ip' => array(
@@ -63,5 +66,11 @@ class Message extends AppModel
             ),
         ),
     );
-   
+    // Custom validation method for plain text
+    public function validatePlainText($check)
+    {
+        $value = array_values($check)[0]; // Get the first value of the array
+        // Check if the value contains any HTML tags
+        return !preg_match('/<[^>]+>/', $value); // Use / as the delimiter
+    }
 }

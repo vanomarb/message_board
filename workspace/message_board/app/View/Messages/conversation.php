@@ -3,6 +3,7 @@
     <div class="flex flex-row h-full w-full overflow-x-hidden">
 
         <div class="flex flex-col flex-auto h-full p-6 conversation_container" data-cid="<?= $conversation_id ?>">
+            <div class="notification-box flex flex-col items-center justify-center rounded-lg text-white border z-50 p-3 bg-red-500 fixed w-[350px] translate-x-[100%] translate-y[5%] hidden"></div>
             <div class="flex flex-col flex-auto flex-shrink-0 rounded-2xl bg-gray-50 h-full">
                 <div class="grid grid-cols-12 gap-y-2 conversation_details px-4 py-2 border-b-1 bg-gray-200 rounded-t-2xl"></div>
                 <div class="flex flex-col h-full overflow-x-auto p-4 conversation_scroller">
@@ -179,6 +180,9 @@
                                 errorMessages.push(validationErr[key]);
                             }
                             $('.notification-box').removeClass('hidden').html(errorMessages.join('<br>'));
+                            setTimeout(() => {
+                                $('.notification-box').addClass('hidden');
+                            }, timeout);
                         }
                     }
                 });
@@ -196,10 +200,10 @@
             // Add scroll event listener
             $chatContainer.on('scroll', function() {
                 // Only trigger load more when at the top and the scrollbar exists
-
                 if ($chatContainer.scrollTop() === 0) {
                     loadMoreMessages();
                 }
+
             });
         });
 
@@ -215,6 +219,13 @@
                 // Scroll to the previous position to maintain scroll
                 $chatContainer.scrollTop(heightDifference);
                 offset = data.offset; // Update the offset
+                $('.convo_item').each(function() {
+                    $(this).readmore({
+                        speed: 75,
+                        moreLink: '<a href="#" class="text-indigo-600">read more</a>',
+                        lessLink: '<a href="#" class="text-indigo-600">read less</a>'
+                    });
+                });
             });
         }
 
@@ -307,7 +318,7 @@
                         ${senderHTML}
                     </a>
                     <div class="relative text-sm ${isSender ? 'bg-indigo-100 mr-3' : 'bg-white ml-3'} py-2 px-4 shadow rounded-xl max-w-[80%]">
-                        <div>${message.content}</div>
+                        <div class="convo_item max-h-[140px] overflow-y-hidden">${message.content}</div>
                     </div>
                     ${isSender ? buildDeleteButton(message.message_id) : ''}
                 </div>
@@ -400,6 +411,15 @@
                 </svg>
             </button>
         </div>`;
+        }
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
         }
 
 

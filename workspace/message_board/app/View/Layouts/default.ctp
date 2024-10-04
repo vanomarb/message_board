@@ -11,6 +11,7 @@
     <?php echo $this->HTML->css("https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"); ?>
     <?php echo $this->HTML->script("https://cdn.tailwindcss.com"); ?>
     <?php echo $this->HTML->script("https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"); ?>
+    <?php echo $this->HTML->script("readmore.js"); ?>
     <?php echo $this->HTML->script("https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"); ?>
     <?php echo $this->HTML->script("https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"); ?>
     <script>
