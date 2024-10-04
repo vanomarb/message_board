@@ -109,7 +109,7 @@
             $('.autoGrowChatBox').height(this.scrollHeight + 30);
         })
         $(document).on('click', '.deleteBtn', function(e) {
-            e.stopPropagation(); // Stop the click event from propagating to the parent .messageItem
+            e.stopPropagation(); // Stop the click event from propagating to the parent.
 
             var conversation_id = $(this).data('mid');
             var confirmation = confirm('Are you sure you want to delete this message?');
@@ -125,11 +125,17 @@
                     success: function(response) {
                         var res = JSON.parse(response);
                         if (res.status === "success") {
-                            loadConversations(offset, limit).then(function(data) {
-                                if (data.conversations.data.length == 0) {
-                                    window.location.href = base_url + 'messages'
-                                }
+                            self.closest('.conversation_item').addClass('scale-0');
+                            // Listen for the transition end event
+                            self.closest('.conversation_item').on('transitionend', function() {
+                                self.closest('.conversation_item').remove(); // remove conversation item
+                                loadConversations(offset, limit).then(function(data) {
+                                    if (data.conversations.data.length == 0) {
+                                        window.location.href = base_url + 'messages'
+                                    }
+                                });
                             });
+
                         } else {
                             alert(res.message);
                         }
@@ -182,10 +188,6 @@
         // Load initial messages and scroll to bottom
         loadConversations(offset, limit).then(function(data) {
 
-            if (data.conversations.data.length === 0) {
-                handleNoMessages(offset, resolve);
-                return;
-            }
 
             // Scroll to bottom after initial load
             $chatContainer.scrollTop($chatContainer[0].scrollHeight);
@@ -194,6 +196,7 @@
             // Add scroll event listener
             $chatContainer.on('scroll', function() {
                 // Only trigger load more when at the top and the scrollbar exists
+
                 if ($chatContainer.scrollTop() === 0) {
                     loadMoreMessages();
                 }
@@ -217,16 +220,15 @@
 
         function handleNoMessages(offset, resolve) {
             const messageContainer = $('.messageListContainer');
+            $('.loadingIcon').remove();
+            if ($('.conversation_box').find('.emptyMessage').length === 0) {
+                $('.conversation_box').prepend(`
+                    <div class="emptyMessage conversation_item col-start-1 col-end-13 m-3 rounded-lg text-center">
+                        No more messages to load.
+                    </div>
+                `);
 
-            if (messageContainer.find('.emptyMessage').length === 0) {
-                messageContainer.append(`
-      <li class="emptyMessage flex justify-center py-5 text-center items-center">
-        No more messages to load.
-      </li>
-    `);
             }
-
-            resolve(offset); // Resolve with current offset
         }
         // Function to load conversations via AJAX
         function loadConversations(offset, limit) {
@@ -241,13 +243,29 @@
                         offset,
                         limit
                     },
+                    beforeSend: function() { // Load loading icon before appending message
+                        $('.conversation_box').prepend(`
+                         <div class="loadingIcon conversation_item col-start-1 col-end-13 m-3 rounded-lg text-center flex items-center justify-center">
+                            <div class="rounded-full bg-slate-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" width="50" height="50" class="p-2" style="shape-rendering: auto; display: block; background: transparent;"><g><circle stroke-linecap="round" fill="none" stroke-dasharray="50.26548245743669 50.26548245743669" stroke="#69fff8" stroke-width="8" r="32" cy="50" cx="50">
+                                <animateTransform values="0 50 50;360 50 50" keyTimes="0;1" dur="1s" repeatCount="indefinite" type="rotate" attributeName="transform"/>
+                                </circle><g/></g>
+                                </svg>
+                            </div>
+                        </div>
+                    `);
+                    },
                     success: function(response) {
+
                         const conversations = JSON.parse(response);
+                        if (conversations.data.length === 0) {
+                            handleNoMessages();
+                            return;
+                        }
                         if (conversations.data.length > 0) {
                             const chatHTML = buildChatHTML(conversations.data);
-                            const templateDetails = buildReceiverDetails(conversations.data[0]);
+                            $('.loadingIcon').remove();
 
-                            $('.conversation_details').html(templateDetails);
                             $('.conversation_box').prepend(chatHTML); // Prepend new messages to maintain order
 
                             offset += limit; // Update offset based on the limit
@@ -270,13 +288,21 @@
 
             // Iterate through messages in reverse order to keep the latest at the bottom
             messages.forEach(message => {
-                const senderHTML = buildUserAvatar(message.sender_id, message.sender_name, message.sender_image);
-                const receiverHTML = buildUserAvatar(message.receiver_id, message.receiver_name, message.receiver_image);
-                const isSender = message.sender_id === message.auth_user;
+                const isSender = message.sender_id == message.auth_user;
 
+                // Determine the receiver based on whether the auth_user is the sender or receiver
+                const receiverId = isSender ? message.receiver_id : message.sender_id;
+                const receiverName = isSender ? message.receiver_name : message.sender_name;
+                const receiverImage = isSender ? message.receiver_image : message.sender_image;
+
+                // Build avatars for both sender and receiver
+                const senderHTML = buildUserAvatar(message.sender_id, message.sender_name, message.sender_image);
+                const receiverHTML = buildUserAvatar(receiverId, receiverName, receiverImage);
+
+                // Build the message template based on whether the auth_user is the sender
                 const template = `
-            <div class="conversation_item ${isSender ? 'col-start-6 col-end-13' : 'col-start-1 col-end-8'} m-3 rounded-lg">
-                <div class="group flex items-center ${isSender ? 'flex-row-reverse justify-start' : 'flex-row'}">
+            <div class="conversation_item ${isSender ? 'col-start-6 col-end-13' : 'col-start-1 col-end-8'} m-3 rounded-lg transition-all duration-150 ease-out scale-100">
+                <div class="group flex ${isSender ? 'flex-row-reverse justify-start' : 'flex-row'}">
                     <a href="${base_url + 'users/profile?uid=' + message.sender_id}">
                         ${senderHTML}
                     </a>
@@ -287,11 +313,49 @@
                 </div>
             </div>`;
 
-                chatHTML = template + chatHTML; // Prepend to maintain the correct order
+                // Set receiver details based on the user being the sender or receiver
+                const templateDetails = buildReceiverDetails({
+                    receiver_id: receiverId,
+                    receiver_name: receiverName,
+                    receiver_image: receiverImage
+                });
+                $('.conversation_details').html(templateDetails);
+
+                // Prepend to maintain the correct order
+                chatHTML = template + chatHTML;
             });
 
             return chatHTML; // Return the final HTML string
         }
+
+        // Build the user avatar (this function stays the same)
+        function buildUserAvatar(userId, userName, userImage) {
+            return userImage ?
+                `<img src="${base_url + 'img/uploads/' + userImage}" class="rounded-full h-10 w-10">` :
+                `<div class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 text-white capitalize">${userName[0]}</div>`;
+        }
+
+        // Build receiver details HTML (this function stays the same)
+        function buildReceiverDetails(receiver) {
+            const receiverHTML = buildUserAvatar(receiver.receiver_id, receiver.receiver_name, receiver.receiver_image);
+            return `
+                <div class="col-start-1 col-end-8 py-3 pr-3 rounded-lg">
+                    <div class="flex flex-row items-center">
+                        <a href="${base_url + 'messages'}" class="relative mr-3 text-lg hover:bg-slate-500 rounded-full flex items-center cursor-pointer">
+                            <svg width="10" height="40" viewBox="0 -9 3 24" class="text-slate-400 hover:text-slate-100 -rotate-180 w-10">
+                                <path d="M0 0L3 3L0 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                            </svg>
+                        </a>
+                        <a class="flex flex-row items-center" href="${base_url + 'users/profile?uid=' + receiver.receiver_id}">
+                            ${receiverHTML}
+                            <div class="relative mr-3 text-lg py-2 px-4">
+                                <div>${receiver.receiver_name}</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>`;
+        }
+
 
 
         // Build user avatar HTML
@@ -303,6 +367,10 @@
 
         // Build receiver details HTML
         function buildReceiverDetails(receiver) {
+            // const isSender = message.sender_id == message.auth_user;
+            // var receiver_id = conversations.data[i].receiver_id;
+            // var receiver_name = conversations.data[i].receiver_name;
+            // var receiver_image = conversations.data[i].receiver_image;
             const receiverHTML = buildUserAvatar(receiver.receiver_id, receiver.receiver_name, receiver.receiver_image);
             return `
         <div class="col-start-1 col-end-8 py-3 pr-3 rounded-lg">
@@ -326,7 +394,7 @@
         function buildDeleteButton(messageId) {
             return `
         <div class="relative top-[-15px] deleteContainer">
-            <button class="deleteBtn ellipsis-btn flex items-center justify-center bg-gray-200 rounded-full w-8 h-8 absolute top-0 transform opacity-0 translate-x-10 group-hover:translate-x-0 mr-2 right-0" data-mid="${messageId}">
+            <button class="deleteBtn ellipsis-btn flex items-center justify-center bg-gray-200 rounded-full w-8 h-8 absolute top-[50%] transform opacity-0 translate-x-10 group-hover:opacity-100 group-hover:translate-x-0 mr-2 right-0" data-mid="${messageId}">
                 <svg class="w-4 h-4 fill-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                     <path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/>
                 </svg>

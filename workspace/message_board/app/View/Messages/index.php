@@ -89,7 +89,7 @@
       if (!message.content) return '';
 
       const receiverAvatar = message.receiver_image ?
-        `<img src="${message.receiver_image}" class="h-12 min-w-12 flex-none rounded-full bg-gray-50">` :
+        `<img src="${base_url + 'img/uploads/' + message.receiver_image}" class="h-12 min-w-12 flex-none rounded-full bg-gray-50">` :
         `<div class="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-500 text-white capitalize">${message.receiver_name[0]}</div>`;
 
       return `

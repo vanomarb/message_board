@@ -7,8 +7,8 @@
 
     /* current input value background color */
     .ui-datepicker-current-day a {
-        background: #eef2ff!important;
-        border-radius:  8px;
+        background: #eef2ff !important;
+        border-radius: 8px;
     }
 
 
@@ -105,6 +105,7 @@
                 <h2 class="pl-6 text-2xl font-bold sm:text-xl text-center">Profile</h2>
                 <?php echo $this->Form->create('User', ['class' => 'space-y-4']);  ?>
                 <div class="notification-box flex flex-col items-center justify-center rounded-lg text-white border w-full z-50 p-3 bg-red-500 hidden"></div>
+                <div class="notification-box success flex flex-col items-center justify-center rounded-lg text-white border w-full z-50 p-3 bg-lime-500 hidden"></div>
                 <div class="grid max-w-2xl mx-auto mt-8 profileContainer group">
                     <div class="flex flex-col items-center space-y-5 sm:flex-row sm:space-y-0">
                         <div class="relative w-40 h-40 rounded-full ring-2 ring-indigo-300 dark:ring-indigo-500 bg-indigo-500 flex items-center justify-center overflow-hidden">
@@ -313,18 +314,16 @@
     </main>
 </div>
 <script>
-    // Create a jQuery plugin that wraps around the Flowbite Datepicker
-    $('#uploadImage').on('change', function() {
-        const file = this.files[0]; // Accessing the file using 'this' in the context of the event handler
-        if (file) {
-            const imgSrc = URL.createObjectURL(file); // Create the object URL
-            $('.previewImage').attr('src', imgSrc); // Set the source of the image using jQuery
-            $('.previewImage').removeClass('opacity-0');
-            $('.previewImage').next().addClass('hidden');
-        }
-    });
-
     $(document).ready(function() {
+        if (localStorage.getItem('profileUpdated')) {
+            $('.notification-box.success').removeClass('hidden').html('Profile updated successfully');
+            setTimeout(() => {
+                $('.notification-box.success').addClass('hidden');
+            }, 3000);
+
+            // Remove the flag
+            localStorage.removeItem('profileUpdated');
+        }
         $('#default-datepicker').datepicker({
             dateFormat: 'yy-mm-dd',
             autohide: true,
@@ -334,7 +333,6 @@
             showOtherMonths: true,
             selectOtherMonths: true,
             beforeShow: function(input, inst) {
-                console.log($(this).attr('data-date'))
                 $(this).datepicker("setDate", $(this).attr('data-date'));
             },
         });
@@ -345,6 +343,7 @@
                 $(this).prop('disabled', false);
             })
             $(this).addClass('hidden');
+            $('#default-datepicker').datepicker("setDate", $('#default-datepicker').attr('data-date'));
 
         })
         $('.cancelProfileBtn').click(function() {
@@ -353,7 +352,39 @@
                 $(this).prop('disabled', true);
             })
             $('.updateProfileBtn').removeClass('hidden');
+            $('#default-datepicker').val($('#default-datepicker').attr('value'))
+        });
 
+        // Create a jQuery plugin that wraps around the Flowbite Datepicker
+        $(document).on('change', '#uploadImage', function() {
+            const file = this.files[0]; // Accessing the file using 'this' in the context of the event handler
+            if (file) {
+                const imgSrc = URL.createObjectURL(file); // Create the object URL
+                $('.previewImage').attr('src', imgSrc); // Set the source of the image using jQuery
+                $('.previewImage').removeClass('opacity-0');
+                $('.previewImage').next().addClass('hidden');
+            }
+        });
+        // Remove input field image when clicked update profile but to be append later if upload image is clicked
+        $('.updateProfileBtn').on('click', function(event) {
+            $('#uploadImage').remove();
+        });
+        // On Upload Image button click
+        $('.uploadImageBtn').on('click', function() {
+            // Clone the input field if it was removed
+            if ($('#uploadImage').length === 0) {
+                const newInput = $('<input/>', {
+                    type: 'file',
+                    name: 'data[User][image]',
+                    id: 'uploadImage',
+                    notrequired: 1,
+                    class: 'hidden', // Add your classes here
+                    // You can add other attributes if necessary
+                });
+
+                // Append the cloned input to the form
+                $(this).parent().append(newInput);
+            }
         });
         $("button[type='submit").click(function(e) {
             e.preventDefault();
@@ -381,6 +412,7 @@
                         var errorMessages = []; // Reset errorMessages
 
                         if (res.status === "success") {
+                            localStorage.setItem('profileUpdated', 'true');
                             location.reload();
                         } else {
                             var validationErr = res.message;
@@ -388,7 +420,7 @@
                             for (var key in validationErr) {
                                 errorMessages.push(validationErr[key]);
                             }
-                            $('.notification-box').removeClass('hidden').html(errorMessages.join('<br>'));
+                            $('.notification-box:not(.success)').removeClass('hidden').html(errorMessages.join('<br>'));
                         }
                     },
                     error: function(xhr, status, error) {
