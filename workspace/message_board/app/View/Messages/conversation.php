@@ -100,7 +100,7 @@
     $(document).ready(function() {
         let $chatContainer = $('.conversation_scroller');
         let offset = 0; // Initial offset
-        let limit = 10; // Number of messages to load per request
+        let limit = 4; // Number of messages to load per request
 
         // convert autogrow textarea javascript above to jquery 
         $(document).on('input', '#autoGrowTextarea', function() {
@@ -177,11 +177,7 @@
         loadConversations(offset, limit).then(function(data) {
             // Scroll to bottom after initial load
             $chatContainer.scrollTop($chatContainer[0].scrollHeight);
-            var newOffset = data.offset
-            // Update the offset based on the new offset returned by loadConversations
-            offset = newOffset;
-
-            // Mark the initial load as complete
+            offset = data.offset; // Update the offset based on the new offset returned
 
             // Add scroll event listener
             $chatContainer.on('scroll', function() {
@@ -194,111 +190,125 @@
 
         // Function to load more messages and maintain scroll position
         function loadMoreMessages() {
-            // Get the current first element to maintain scroll position
-            let firstEl = $chatContainer.find('.conversation_item').first();
-            let previousScrollHeight = $chatContainer[0].scrollHeight;
+            const previousScrollHeight = $chatContainer[0].scrollHeight; // Get previous scroll height
 
             // Load more messages (prepend to the top)
             loadConversations(offset, limit).then(function(data) {
-                var newOffset = data.offset
-                // After prepending, calculate the new scroll position to maintain it
-                let newScrollHeight = $chatContainer[0].scrollHeight;
-                let heightDifference = newScrollHeight - previousScrollHeight;
+                const newScrollHeight = $chatContainer[0].scrollHeight;
+                const heightDifference = newScrollHeight - previousScrollHeight;
 
-                // Scroll to the previous first element (maintain position)
+                // Scroll to the previous position to maintain scroll
                 $chatContainer.scrollTop(heightDifference);
-
-                // Update the offset based on the new offset returned
-                offset = newOffset;
+                offset = data.offset; // Update the offset
             });
         }
 
         // Function to load conversations via AJAX
         function loadConversations(offset, limit) {
-            let conversation_id = $('.conversation_container').data('cid');
+            const conversation_id = $('.conversation_container').data('cid');
+
             return new Promise((resolve, reject) => {
                 $.ajax({
-                    url: base_url + 'messages/loadConversations',
+                    url: `${base_url}messages/loadConversations`,
                     type: 'GET',
                     data: {
-                        conversation_id: conversation_id,
-                        offset: offset,
-                        limit: limit
+                        conversation_id,
+                        offset,
+                        limit
                     },
                     success: function(response) {
-                        var conversations = JSON.parse(response);
-                        var chatHTML = '';
-                        let lastSenderId = null;
+                        const conversations = JSON.parse(response);
                         if (conversations.data.length > 0) {
-                            for (var i = 0; i < conversations.data.length; i++) {
-                                var sender_id = conversations.data[i].sender_id;
-                                var sender_name = conversations.data[i].sender_name;
-                                var sender_image = conversations.data[i].sender_image;
-                                var receiver_id = conversations.data[i].receiver_id;
-                                var receiver_name = conversations.data[i].receiver_name;
-                                var receiver_image = conversations.data[i].receiver_image;
-                                var message = conversations.data[i].content;
-                                var timestamp = conversations.data[i].timestamp;
-                                var conversationId = conversations.data[i].message_id;
-                                var userId = conversations.data[i].auth_user;
+                            const chatHTML = buildChatHTML(conversations.data);
+                            const templateDetails = buildReceiverDetails(conversations.data[0]);
 
-                                // Placeholder image logic (if the image is null or empty, use a default avatar)
-                                var senderAvatar = sender_image ? `<img src="${base_url + 'img/uploads/' + sender_image}" class="rounded-full h-10 w-10">` : `<div class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 text-white capitalize">${sender_name[0]}</div>`;
-                                var receiverAvatar = receiver_image ? `<img src="${base_url + 'img/uploads/' + receiver_image}" class="rounded-full h-10 w-10">` : `<div class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 text-white capitalize">${receiver_name[0]}</div>`;
-
-                                // Display the chat message for sender or receiver
-                                var template = `
-                                    <div class="conversation_item ${sender_id == userId ? 'col-start-6 col-end-13': 'col-start-1 col-end-8'} m-3 rounded-lg">
-                                        <div class="group flex items-center ${sender_id == userId ? 'flex-row-reverse justify-start' : 'flex-row'}">
-                                            <a href="${base_url + 'users/profile?uid=' + sender_id}">
-                                            ${senderAvatar}
-                                            </a>
-                                            <div class="relative text-sm ${sender_id == userId ? 'bg-indigo-100 mr-3' : 'bg-white ml-3'} py-2 px-4 shadow rounded-xl max-w-[80%]">
-                                                <div>${message}</div>
-                                            </div>
-                                        ${sender_id == userId ? `<div class="relative top-[-15px] deleteContainer">
-                                                <button class="deleteBtn ellipsis-btn flex items-center justify-center bg-gray-200 rounded-full w-8 h-8 absolute top-0 transform opacity-0 ${sender_id == userId ? 'translate-x-10 group-hover:translate-x-0 mr-2 right-0' : 'translate-x-0 group-hover:translate-x-10 right-[36%]'} group-hover:opacity-100 transition-transform duration-300" data-mid="${conversationId}">
-                                                    <svg class="w-4 h-4 fill-red-600"xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/></svg>
-                                                </button>
-                                            </div>` : ''}
-                                        </div>
-                                    </div>`;
-                                // Prepend the message to the chat container
-                                chatHTML = template + chatHTML;
-                            }
-                            // Display the receiver details above the chat container
-                            var templateDetails = `
-                                <div class="col-start-1 col-end-8 py-3 pr-3 rounded-lg">
-                                    <div class="flex flex-row items-center">
-                                        <a href="${base_url + 'messages'}" class="relative mr-3 text-lg hover:bg-slate-500 rounded-full flex items-center cursor-pointer">
-                                            <svg width="10" height="40" viewBox="0 -9 3 24" class="text-slate-400 hover:text-slate-100 -rotate-180 w-10"><path d="M0 0L3 3L0 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
-                                        </a>
-                                         <a class="flex flex-row items-center" href="${base_url + 'users/profile?uid=' + receiver_id}">
-                                            ${receiverAvatar}
-                                             <div class="relative mr-3 text-lg py-2 px-4">
-                                                <div>${receiver_name}</div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>`;
                             $('.conversation_details').html(templateDetails);
-                            // Prepend new messages to the conversation box
-                            $('.conversation_box').prepend(chatHTML);
+                            $('.conversation_box').prepend(chatHTML); // Prepend new messages to maintain order
 
-                            // Update offset by adding the limit (number of items loaded)
-                            offset += limit;
-
-                            // Resolve with the updated offset
+                            offset += limit; // Update offset based on the limit
                         }
                         resolve({
-                            offset: offset,
-                            conversations: conversations
+                            offset,
+                            conversations
                         });
-
+                    },
+                    error: function(err) {
+                        console.error("AJAX error:", err);
+                        reject(err);
                     }
-                })
+                });
             });
         }
+
+        function buildChatHTML(messages) {
+            let chatHTML = ''; // Initialize chatHTML outside the loop
+
+            // Iterate through messages in reverse order to keep the latest at the bottom
+            messages.forEach(message => {
+                const senderHTML = buildUserAvatar(message.sender_id, message.sender_name, message.sender_image);
+                const receiverHTML = buildUserAvatar(message.receiver_id, message.receiver_name, message.receiver_image);
+                const isSender = message.sender_id === message.auth_user;
+
+                const template = `
+            <div class="conversation_item ${isSender ? 'col-start-6 col-end-13' : 'col-start-1 col-end-8'} m-3 rounded-lg">
+                <div class="group flex items-center ${isSender ? 'flex-row-reverse justify-start' : 'flex-row'}">
+                    <a href="${base_url + 'users/profile?uid=' + message.sender_id}">
+                        ${senderHTML}
+                    </a>
+                    <div class="relative text-sm ${isSender ? 'bg-indigo-100 mr-3' : 'bg-white ml-3'} py-2 px-4 shadow rounded-xl max-w-[80%]">
+                        <div>${message.content}</div>
+                    </div>
+                    ${isSender ? buildDeleteButton(message.message_id) : ''}
+                </div>
+            </div>`;
+
+                chatHTML = template + chatHTML; // Prepend to maintain the correct order
+            });
+
+            return chatHTML; // Return the final HTML string
+        }
+
+
+        // Build user avatar HTML
+        function buildUserAvatar(userId, userName, userImage) {
+            return userImage ?
+                `<img src="${base_url + 'img/uploads/' + userImage}" class="rounded-full h-10 w-10">` :
+                `<div class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 text-white capitalize">${userName[0]}</div>`;
+        }
+
+        // Build receiver details HTML
+        function buildReceiverDetails(receiver) {
+            const receiverHTML = buildUserAvatar(receiver.receiver_id, receiver.receiver_name, receiver.receiver_image);
+            return `
+        <div class="col-start-1 col-end-8 py-3 pr-3 rounded-lg">
+            <div class="flex flex-row items-center">
+                <a href="${base_url + 'messages'}" class="relative mr-3 text-lg hover:bg-slate-500 rounded-full flex items-center cursor-pointer">
+                    <svg width="10" height="40" viewBox="0 -9 3 24" class="text-slate-400 hover:text-slate-100 -rotate-180 w-10">
+                        <path d="M0 0L3 3L0 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                    </svg>
+                </a>
+                <a class="flex flex-row items-center" href="${base_url + 'users/profile?uid=' + receiver.receiver_id}">
+                    ${receiverHTML}
+                    <div class="relative mr-3 text-lg py-2 px-4">
+                        <div>${receiver.receiver_name}</div>
+                    </div>
+                </a>
+            </div>
+        </div>`;
+        }
+
+        // Build delete button HTML
+        function buildDeleteButton(messageId) {
+            return `
+        <div class="relative top-[-15px] deleteContainer">
+            <button class="deleteBtn ellipsis-btn flex items-center justify-center bg-gray-200 rounded-full w-8 h-8 absolute top-0 transform opacity-0 translate-x-10 group-hover:translate-x-0 mr-2 right-0" data-mid="${messageId}">
+                <svg class="w-4 h-4 fill-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                    <path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/>
+                </svg>
+            </button>
+        </div>`;
+        }
+
 
 
     })
