@@ -22,7 +22,9 @@
     var offset = 0;
     var limit = 6;
     var search = '';
-    $('.searchMessage').keyup(function() {
+
+    
+    $('.searchMessage').keyup(debounce(function() {
       search = $(this).val().toLowerCase();
       offset = 0;
       $('.messageListContainer').html('');
@@ -32,7 +34,7 @@
           $('.messageItem').removeClass('scale-0');
         });
       });
-    });
+    },200));
 
     function showList(offset, limit, search = '') {
       return new Promise((resolve, reject) => {
