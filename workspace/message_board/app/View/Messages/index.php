@@ -23,18 +23,15 @@
     var limit = 6;
     var search = '';
 
-    
+
     $('.searchMessage').keyup(debounce(function() {
       search = $(this).val().toLowerCase();
       offset = 0;
       $('.messageListContainer').html('');
       showList(offset, limit, search).then(function() {
-        $('.messageItem').addClass('delay-150 scale-100');
-        $('.messageItem').on('transitionend', function() {
-          $('.messageItem').removeClass('scale-0');
-        });
+        animateItem(50);
       });
-    },200));
+    }, 200));
 
     function showList(offset, limit, search = '') {
       return new Promise((resolve, reject) => {
@@ -125,13 +122,18 @@
   `;
     }
 
+    function animateItem(wait) {
+      setTimeout(() => {
+        $('.messageItem').addClass('delay-150 scale-100');
+        $('.messageItem').on('transitionend', function() {
+          $('.messageItem').removeClass('scale-0');
+        });
+      }, wait);
+    }
 
     showList(offset, limit, search).then(function(newOffset) {
       offset = newOffset; // Update the offset after initial load
-      $('.messageItem').addClass('delay-150 scale-100');
-      $('.messageItem').on('transitionend', function() {
-        $('.messageItem').removeClass('scale-0');
-      });
+      animateItem(0);
 
       $(window).on('scroll', function() {
         // Check if at the bottom of the container
