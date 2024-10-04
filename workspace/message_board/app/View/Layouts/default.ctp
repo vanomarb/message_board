@@ -44,7 +44,7 @@
 <body style="font-family: Poppins;">
     <?php echo $this->Flash->render(); ?>
     <?php if ($currentUser != null && $this->request->params['action'] != 'thankyou') : ?>
-        <nav class="border-b-[1px] border-slate-500 fixed w-full top-0 left-0 bg-white">
+        <nav class="z-[1] border-b-[1px] border-slate-500 fixed w-full top-0 left-0 bg-white">
             <div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
                 <div class="relative flex h-16 items-center justify-between">
                     <div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
