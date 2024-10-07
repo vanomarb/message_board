@@ -254,11 +254,7 @@ class MessagesController extends AppController
             LIMIT 
                 $offset, $limit;
         ";
-        // CakeLog::write('debug', $sqlQuery);  // or Log::write('debug', $sqlQuery); if using newer CakePHP versions
 
-        // // Output the query for immediate viewing
-        // echo $sqlQuery;
-        // die();
         $messages = $this->Message->query($sqlQuery);
 
         // Prepare the messages array for the view

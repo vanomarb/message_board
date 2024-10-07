@@ -351,7 +351,6 @@
                         });
                     },
                     error: function(err) {
-                        console.error("AJAX error:", err);
                         reject(err);
                     }
                 });
