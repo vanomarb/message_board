@@ -126,6 +126,7 @@
                     success: function(response) {
                         var res = JSON.parse(response);
                         if (res.status === "success") {
+
                             self.closest('.conversation_item').addClass('scale-0');
                             // Listen for the transition end event
                             self.closest('.conversation_item').on('transitionend', function() {
@@ -144,6 +145,53 @@
                 });
             }
         });
+        $(document).on('click', '.cancelEdit', function(e) {
+            $(this).closest('.selectedItem').remove();
+            $('#autoGrowTextarea').val('');
+            $('.conversation_container').removeAttr('mid');
+
+        })
+        $(document).on('click', '.editBtn', function(e) {
+            e.stopPropagation(); // Stop the click event from propagating to the parent.
+
+            var content = $(this).closest('.conversation_item').find('.convo_item').html();
+
+            // Decode HTML entities
+            var decodedContent = $('<textarea />').html(content).text();
+
+            var $textarea = $('#autoGrowTextarea');
+            $textarea.val(decodedContent); // Set the decoded value to the textarea
+
+            // Reset the height of the textarea and then set it to match its scroll height
+            autoResizeTextarea($textarea);
+            if ($('#MessageIndexForm').find('.selectedItem').length > 0) {
+                $('#MessageIndexForm').find('.selectedItem').remove();
+            }
+            // Prepend the previewed edited content
+            $('#MessageIndexForm').prepend(`
+                 <div class="selectedItem overflow-y-hidden relative text-sm text-slate-300 bg-slate-100 py-2 px-4 rounded-t-xl w-full flex items-center">
+                    ${buildReplyIcon()}
+                    <div class="convo_item my-2 max-w-[90%] max-h-[100px] line-clamp-2">${content}</div>
+                    ${buildCloseIcon()}
+                </div>
+            `);
+
+            var mid = $(this).data('mid');
+            $('.conversation_container').attr('data-mid', mid);
+        });
+
+        // Function to resize the textarea
+        function autoResizeTextarea(textarea) {
+            textarea.css('height', 'auto'); // Reset height to auto to recalculate height
+            textarea.css('height', textarea.prop('scrollHeight') + 'px'); // Set height based on scrollHeight
+        }
+
+        // Trigger resizing when the user types in the textarea
+        $('#autoGrowTextarea').on('input', function() {
+            autoResizeTextarea($(this));
+        });
+
+
 
         $("button[type='submit").click(function(e) {
             e.preventDefault();
@@ -152,14 +200,23 @@
                 $('.notification-box').removeClass('hidden').html(errorMessages.join('<br>')); // Show error messages
             } else {
                 var conversation_id = $('.conversation_container').data('cid');
+                var message_id = $('.conversation_container').data('mid');
                 var content = $('#autoGrowTextarea').val();
+                var form = $('#MessageIndexForm');
+                var formData = new FormData(form[0]);
+                if (message_id) {
+                    formData.append('data[Message][mid]', message_id);
+                }
+
                 if (content == '') {
                     return false;
                 }
                 $.ajax({
                     url: base_url + "messages/new_message",
                     type: "POST",
-                    data: $('#MessageIndexForm').serialize(),
+                    data: formData,
+                    processData: false,
+                    contentType: false,
                     success: function(response) {
                         var res = JSON.parse(response);
                         if (res.status == "success") {
@@ -170,7 +227,9 @@
                                 // Scroll to bottom after initial load
                                 $chatContainer.scrollTop($chatContainer[0].scrollHeight);
                             })
-
+                            if (form.find('.selectedItem').length > 0) {
+                                form.find('.selectedItem').remove();
+                            }
                             $('#autoGrowTextarea').val(''); // Reset textarea
                             $('#autoGrowTextarea').css('height', '40px'); // Reset textarea height
                         } else {
@@ -192,9 +251,12 @@
         // Load initial messages and scroll to bottom
         loadConversations(offset, limit).then(function(data) {
 
+            $('.conversation_item:last-child').addClass('mb-[10%]');
 
             // Scroll to bottom after initial load
-            $chatContainer.scrollTop($chatContainer[0].scrollHeight);
+            setTimeout(() => {
+                $chatContainer.scrollTop($chatContainer[0].scrollHeight);
+            }, 100);
             offset = data.offset; // Update the offset based on the new offset returned
 
             // Add scroll event listener
@@ -205,6 +267,7 @@
                 }
 
             });
+
         });
 
         // Function to load more messages and maintain scroll position
@@ -222,10 +285,11 @@
                 $('.convo_item').each(function() {
                     $(this).readmore({
                         speed: 75,
-                        moreLink: '<a href="#" class="text-indigo-600">read more</a>',
-                        lessLink: '<a href="#" class="text-indigo-600">read less</a>'
+                        moreLink: '<a href="#" class="text-indigo-100">read more</a>',
+                        lessLink: '<a href="#" class="text-indigo-100">read less</a>'
                     });
                 });
+                $('.conversation_item:last-child').addClass('mb-[10%]');
             });
         }
 
@@ -317,10 +381,13 @@
                     <a href="${base_url + 'users/profile?uid=' + message.sender_id}">
                         ${senderHTML}
                     </a>
-                    <div class="relative text-sm ${isSender ? 'bg-indigo-100 mr-3' : 'bg-white ml-3'} py-2 px-4 shadow rounded-xl max-w-[80%]">
+                    <div class="convo_item_box relative text-sm ${isSender ? 'bg-indigo-500 text-white mr-3' : 'bg-white ml-3'} py-2 px-4 shadow rounded-xl max-w-[80%]">
                         <div class="convo_item max-h-[140px] overflow-y-hidden">${message.content}</div>
                     </div>
-                    ${isSender ? buildDeleteButton(message.message_id) : ''}
+                    ${message.date_updated ? `
+                        <div class="relative flex items-center mr-2">${buildEditIcon()}</div>
+                    ` : ''}
+                    ${isSender ? buildActionMenu(message.message_id) : ''}
                 </div>
             </div>`;
 
@@ -402,15 +469,50 @@
         }
 
         // Build delete button HTML
-        function buildDeleteButton(messageId) {
+        function buildActionMenu(messageId) {
             return `
-        <div class="relative top-[-15px] deleteContainer">
-            <button class="deleteBtn ellipsis-btn flex items-center justify-center bg-gray-200 rounded-full w-8 h-8 absolute top-[50%] transform opacity-0 translate-x-10 group-hover:opacity-100 group-hover:translate-x-0 mr-2 right-0" data-mid="${messageId}">
-                <svg class="w-4 h-4 fill-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                    <path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/>
-                </svg>
-            </button>
+        <div class="relative top-[-15px] actionContainer">
+            <div class="ellipsis-btn cursor-pointer flex items-center justify-center bg-gray-200 rounded-full w-8 h-8 absolute top-[50%] transform opacity-0 group-hover:opacity-100 mr-2 right-0 group/menu">
+                <svg class="h-6 w-6 flex-none" fill="none"><path d="M12 8v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1V8Zm0 0V7a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1ZM12 12v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1v-1Zm0 0v-1a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1ZM12 16v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1v-1Zm0 0v-1a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1Z" fill="black"></path></svg>
+                <div class="group-hover/menu:opacity-100 opacity-0 transition duration-100 delay-100 pointer-events-auto absolute w-36 space-y-1 rounded-lg bg-white p-3 text-[0.8125rem] font-medium leading-6 text-slate-700 shadow-xl shadow-black/5 ring-1 ring-slate-700/10 right-10">
+                    <div class="flex rounded-[10px] p-1 hover:bg-slate-100 editBtn cursor-pointer" data-mid="${messageId}">
+                        <div class="flex h-6 w-6 flex-none items-center justify-center rounded-md bg-white shadow ring-1 ring-slate-900/10">
+                            ${buildEditIcon()}
+                        </div>
+                        <div class="ml-3">Edit</div>
+                    </div>
+                    <div class="flex rounded-[10px] p-1 hover:bg-slate-100 deleteBtn cursor-pointer" data-mid="${messageId}">
+                        <div class="flex h-6 w-6 flex-none items-center justify-center rounded-md bg-white shadow ring-1 ring-slate-900/10">
+                            ${buildDeleteIcon()}
+                        </div>
+                        <div class="ml-3 text-slate-900">Delete</div>
+                    </div>
+                </div>
+            </div>
         </div>`;
+        }
+
+        function buildEditIcon() {
+            return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                </svg>`;
+        }
+
+        function buildDeleteIcon() {
+            return `<svg class="w-4 h-4 fill-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                        <path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/>
+                    </svg>`;
+        }
+
+        function buildReplyIcon() {
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="ml-12 mr-5 w-6 h-6">
+                    <path d="M20 3C20.5523 3 21 3.44771 21 4C21 4.55228 20.5523 5 20 5L13 5C12.2044 5 11.4413 5.31607 10.8787 5.87868C10.3161 6.44129 10 7.20435 10 8V17.5858L13.2929 14.2929C13.6834 13.9024 14.3166 13.9024 14.7071 14.2929C15.0976 14.6834 15.0976 15.3166 14.7071 15.7071L9.70711 20.7071C9.31658 21.0976 8.68342 21.0976 8.29289 20.7071L3.29289 15.7071C2.90237 15.3166 2.90237 14.6834 3.29289 14.2929C3.68342 13.9024 4.31658 13.9024 4.70711 14.2929L8 17.5858V8C8 6.67392 8.52678 5.40215 9.46447 4.46447C10.4021 3.52678 11.6739 3 13 3H20Z" class="fill-slate-300"></path>
+                    </svg>`;
+        }
+
+        function buildCloseIcon() {
+            return `<svg class="w-6 h-6 cursor-pointer absolute right-[10px] cancelEdit fill-slate-300 hover:fill-slate-400" fill="currentColor" icon-name="clear-fill" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm3.832 12.418-1.414 1.414L10 11.414l-2.418 2.418-1.414-1.414L8.586 10 6.168 7.582l1.414-1.414L10 8.586l2.418-2.418 1.414 1.414L11.414 10l2.418 2.418Z"></path>
+            </svg>`;
         }
     })
 </script>

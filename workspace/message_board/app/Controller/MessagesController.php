@@ -10,7 +10,6 @@ class MessagesController extends AppController
             $this->request->data['Message']['created_ip'] = $ipAddress;
             $this->request->data['Message']['modified_ip'] = $ipAddress;
             $this->request->data['Message']['sent_from'] = $this->Auth->user('id');
-            $this->request->data['Message']['date_added'] = date('Y-m-d H:i:s');
         }
         // always restrict your whitelists to a per-controller basis
     }
@@ -31,6 +30,7 @@ class MessagesController extends AppController
             m.id as message_id, 
             m.content, 
             m.date_added, 
+            m.date_updated,
             sender.id AS sender_id, 
             sender.name AS sender_name, 
             sender.email AS sender_email, 
@@ -104,12 +104,21 @@ class MessagesController extends AppController
     public function new_message()
     {
         if ($this->request->is('post')) {
+
+
             // Bind data to the model
             $this->Message->set($this->request->data);
 
+            if (isset($this->request->data['Message']['mid'])) {
+                $this->request->data['Message']['id'] = $this->request->data['Message']['mid'];
+                $this->request->data['Message']['date_updated'] = date('Y-m-d H:i:s');
+                unset($this->request->data['Message']['mid']);
+            } else {
+                $this->request->data['Message']['date_added'] = date('Y-m-d H:i:s');
+            }
             // Escape the content before saving it to the database to avoid potential XSS vulnerabilities
             $this->request->data['Message']['content'] = htmlspecialchars($this->request->data['Message']['content'], ENT_QUOTES, 'UTF-8');
-            
+
 
             // Validation Check
             if ($this->Message->validates()) {
