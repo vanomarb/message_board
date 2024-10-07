@@ -88,7 +88,7 @@
             function formatUser(user) {
                 var img = `<div class="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-500 text-white capitalize mr-3">${user.text[0]}</div>`;
                 if (user.image) {
-                    img = `<img src="${base_url + 'img/uploads/' + user.image}" class="p-1 mr-3 w-12" />`
+                    img = `<img src="${base_url + 'img/uploads/' + user.image}" class="mr-3 w-12 rounded-full" />`
                 }
                 var $state = $(
                     '<div class="flex items-center"> ' + img + ' <span>' + user.text + '</span></div>'
@@ -100,7 +100,7 @@
             function formatUserSelection(user) {
                 var img = `<div class="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-500 text-white capitalize mr-3 text-xs">${user.text[0]}</div>`;
                 if (user.image) {
-                    img = `<img src="${base_url + 'img/uploads/' + user.image}" class="p-1 mr-3 w-6" />`
+                    img = `<img src="${base_url + 'img/uploads/' + user.image}" class="mr-3 w-6 rounded-full" />`
                 }
 
                 if (!user.id) {
