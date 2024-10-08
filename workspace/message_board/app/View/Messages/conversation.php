@@ -285,8 +285,8 @@
                 $('.convo_item').each(function() {
                     $(this).readmore({
                         speed: 75,
-                        moreLink: '<a href="#" class="text-indigo-100">read more</a>',
-                        lessLink: '<a href="#" class="text-indigo-100">read less</a>'
+                        moreLink: '<a href="#">read more</a>',
+                        lessLink: '<a href="#">read less</a>'
                     });
                 });
                 $('.conversation_item:last-child').addClass('mb-[10%]');
@@ -380,8 +380,8 @@
                     <a href="${base_url + 'users/profile?uid=' + message.sender_id}">
                         ${senderHTML}
                     </a>
-                    <div class="convo_item_box relative text-sm ${isSender ? 'bg-indigo-500 text-white mr-3' : 'bg-white ml-3'} py-2 px-4 shadow rounded-xl max-w-[80%]">
-                        <div class="convo_item max-h-[140px] overflow-y-hidden">${message.content}</div>
+                    <div class="convo_item_box relative text-sm ${isSender ? 'bg-indigo-500 text-white mr-3' : 'bg-white ml-3'} py-2 px-4 shadow rounded-xl max-w-[80%] [&.bg-indigo-500>a]:text-indigo-100 [&.bg-white>a]:text-slate-500">
+                        <div class="convo_item max-h-[60px] overflow-y-hidden">${message.content}</div>
                     </div>
                     ${message.date_updated ? `
                         <div class="relative flex items-center mr-2">${buildEditIcon()}</div>
@@ -472,7 +472,7 @@
             return `
         <div class="relative top-[-15px] actionContainer">
             <div class="ellipsis-btn cursor-pointer flex items-center justify-center bg-gray-200 rounded-full w-8 h-8 absolute top-[50%] transform opacity-0 group-hover:opacity-100 mr-2 right-0 group/menu">
-                <svg class="h-6 w-6 flex-none" fill="none"><path d="M12 8v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1V8Zm0 0V7a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1ZM12 12v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1v-1Zm0 0v-1a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1ZM12 16v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1v-1Zm0 0v-1a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1Z" fill="black"></path></svg>
+                ${buildEllipsisIcon()}
                 <div class="group-hover/menu:opacity-100 opacity-0 transition duration-100 delay-100 pointer-events-auto absolute w-36 space-y-1 rounded-lg bg-white p-3 text-[0.8125rem] font-medium leading-6 text-slate-700 shadow-xl shadow-black/5 ring-1 ring-slate-700/10 right-10">
                     <div class="flex rounded-[10px] p-1 hover:bg-slate-100 editBtn cursor-pointer" data-mid="${messageId}">
                         <div class="flex h-6 w-6 flex-none items-center justify-center rounded-md bg-white shadow ring-1 ring-slate-900/10">
@@ -489,6 +489,10 @@
                 </div>
             </div>
         </div>`;
+        }
+
+        function buildEllipsisIcon() {
+            return `<svg class="h-6 w-6 flex-none" fill="none"><path d="M12 8v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1V8Zm0 0V7a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1ZM12 12v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1v-1Zm0 0v-1a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1ZM12 16v1a1 1 0 0 0 1-1h-1Zm0 0h-1a1 1 0 0 0 1 1v-1Zm0 0v-1a1 1 0 0 0-1 1h1Zm0 0h1a1 1 0 0 0-1-1v1Z" fill="black"></path></svg>`;
         }
 
         function buildEditIcon() {
